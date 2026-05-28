@@ -1,6 +1,6 @@
 {
 	"name": "hawk-quotient-sync",
-	"description": "Cloudflare's native serverless SQL database.",
+	"description": "Syncs Hawk Quotient events from Supabase into the existing Google Sheet.",
 	"cloudflare": {
 		"label": "Worker + D1 Database",
 		"products": [
@@ -17,14 +17,16 @@
 	},
 	"devDependencies": {
 		"typescript": "5.9.3",
+		"vitest": "^4.1.7",
 		"wrangler": "4.56.0"
 	},
 	"private": true,
 	"scripts": {
 		"cf-typegen": "wrangler types",
-		"check": "tsc && wrangler deploy --dry-run",
+		"test": "vitest run",
+		"check": "npm test && tsc && wrangler deploy --dry-run",
 		"deploy": "wrangler deploy",
-		"dev": "pnpm seedLocalD1 && wrangler dev",
+		"dev": "npm run seedLocalD1 && wrangler dev",
 		"predeploy": "wrangler d1 migrations apply DB --remote",
 		"seedLocalD1": "wrangler d1 migrations apply DB --local"
 	}

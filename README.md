@@ -1,59 +1,107 @@
-# Worker + D1 Database
+# Hawk Quotient Sync
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/d1-template)
+Cloudflare Worker that syncs Hawk Quotient lifecycle events from the existing Hawk Supabase project into the existing Google Sheet tab `⚡ Quotient Import`.
 
-![Worker + D1 Template Preview](https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/cb7cb0a9-6102-4822-633c-b76b7bb25900/public)
+Quotient must keep sending webhooks to the existing Supabase Edge Function:
 
-<!-- dash-content-start -->
-
-D1 is Cloudflare's native serverless SQL database ([docs](https://developers.cloudflare.com/d1/)). This project demonstrates using a Worker with a D1 binding to execute a SQL statement. A simple frontend displays the result of this query:
-
-```SQL
-SELECT * FROM comments LIMIT 3;
+```text
+https://yaeyjliirqyyqgqvuicz.supabase.co/functions/v1/sync-quotient-webhook
 ```
 
-The D1 database is initialized with a `comments` table and this data:
+This Worker reads Supabase after that function has processed events. It does not replace the production Hawk dashboard webhook.
 
-```SQL
-INSERT INTO comments (author, content)
-VALUES
-    ('Kristian', 'Congrats!'),
-    ('Serena', 'Great job!'),
-    ('Max', 'Keep up the good work!')
-;
+## Behavior
+
+- Reads processed raw events from `public.quotient_events_raw`.
+- Handles `quote_sent`, `quote_accepted`, and `quote_declined`.
+- Matches Google Sheet rows by `QUOTE #`.
+- Appends a row if the quote number is not found.
+- Updates only automated fields for existing rows.
+- Never updates manual columns:
+  - `I DATE COMPLETED`
+  - `K DEPOSIT AMOUNT`
+  - `L DEPOSIT DATE`
+- Stores processed Supabase raw event IDs in D1.
+
+## Sheet Mapping
+
+| Sheet column | Source |
+| --- | --- |
+| `A QUOTE #` | `payload.quote_number` |
+| `B DATE QUOTED` | Perth date from `payload.first_sent` |
+| `C ESTIMATOR` | `payload.from` |
+| `D CUSTOMER` | `payload.quote_for.name_first` + `payload.quote_for.name_last`, fallback `payload.for` |
+| `E FLOORING STREAM` | blank |
+| `F DESCRIPTION` | `payload.title` |
+| `G STAGE` | `payload.quote_status` |
+| `H STAGE CHANGE` | blank for sent; Perth date from `accepted.when` or `declined.when` |
+| `J VALUE` | `payload.total_excludes_tax` |
+
+Dates are written as `DD/MM/YYYY`.
+
+## Required Secrets
+
+Set these in Cloudflare:
+
+```bash
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+npx wrangler secret put GOOGLE_CLIENT_EMAIL
+npx wrangler secret put GOOGLE_PRIVATE_KEY
+npx wrangler secret put GOOGLE_SHEET_ID
 ```
 
-> [!IMPORTANT]
-> When using C3 to create this project, select "no" when it asks if you want to deploy. You need to follow this project's [setup steps](https://github.com/cloudflare/templates/tree/main/d1-template#setup-steps) before deploying.
+Optional manual trigger protection:
 
-<!-- dash-content-end -->
-
-## Getting Started
-
-Outside of this repo, you can start a new project with this template using [C3](https://developers.cloudflare.com/pages/get-started/c3/) (the `create-cloudflare` CLI):
-
-```
-npm create cloudflare@latest -- --template=cloudflare/templates/d1-template
+```bash
+npx wrangler secret put SYNC_SHARED_SECRET
 ```
 
-A live public deployment of this template is available at [https://d1-template.templates.workers.dev](https://d1-template.templates.workers.dev)
+Non-secret config lives in `wrangler.json`:
 
-## Setup Steps
+- `SUPABASE_URL`
+- `GOOGLE_SHEET_TAB_NAME`
+- `SUPABASE_EVENT_LIMIT`
 
-1. Install the project dependencies with a package manager of your choice:
-   ```bash
-   npm install
-   ```
-2. Create a [D1 database](https://developers.cloudflare.com/d1/get-started/) with the name "d1-template-database":
-   ```bash
-   npx wrangler d1 create d1-template-database
-   ```
-   ...and update the `database_id` field in `wrangler.json` with the new database ID.
-3. Run the following db migration to initialize the database (notice the `migrations` directory in this project):
-   ```bash
-   npx wrangler d1 migrations apply --remote d1-template-database
-   ```
-4. Deploy the project!
-   ```bash
-   npx wrangler deploy
-   ```
+The Google service account must have edit access to the target Google Sheet.
+
+## Local Development
+
+```bash
+npm install
+npm run seedLocalD1
+npm test
+npm run check
+```
+
+Run locally:
+
+```bash
+npm run dev
+```
+
+Manual sync endpoint:
+
+```bash
+curl -X POST "http://localhost:8787/sync"
+```
+
+If `SYNC_SHARED_SECRET` is configured:
+
+```bash
+curl -X POST "http://localhost:8787/sync" \
+  -H "Authorization: Bearer $SYNC_SHARED_SECRET"
+```
+
+Health endpoint:
+
+```bash
+curl "http://localhost:8787/health"
+```
+
+## Deploy
+
+```bash
+npm run deploy
+```
+
+`predeploy` applies remote D1 migrations before deployment.
