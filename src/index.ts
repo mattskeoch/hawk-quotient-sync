@@ -1,4 +1,4 @@
-import { requireConfig, eventLimit, type AppEnv } from "./config";
+import { requireConfig, eventLimit, minRawEventId, type AppEnv } from "./config";
 import { D1SyncStore } from "./d1Store";
 import { GoogleSheetsClient } from "./googleSheets";
 import { SupabaseQuotientClient } from "./supabaseClient";
@@ -46,7 +46,7 @@ async function syncSupabaseToSheet(env: AppEnv): Promise<SyncResult> {
 			config.GOOGLE_CLIENT_EMAIL,
 			config.GOOGLE_PRIVATE_KEY,
 		);
-		const events = await supabase.listProcessedQuoteEvents(eventLimit(config));
+		const events = await supabase.listProcessedQuoteEvents(eventLimit(config), minRawEventId(config));
 
 		const result = await runSync({
 			tabName: config.GOOGLE_SHEET_TAB_NAME,

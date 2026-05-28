@@ -11,7 +11,8 @@
 	"vars": {
 		"SUPABASE_URL": "https://yaeyjliirqyyqgqvuicz.supabase.co",
 		"GOOGLE_SHEET_TAB_NAME": "⚡ Quotient Import",
-		"SUPABASE_EVENT_LIMIT": "250"
+		"SUPABASE_EVENT_LIMIT": "250",
+		"SUPABASE_MIN_RAW_EVENT_ID": "1651"
 	},
 	"d1_databases": [
 		{

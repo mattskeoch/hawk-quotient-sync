@@ -61,6 +61,7 @@ Non-secret config lives in `wrangler.json`:
 - `SUPABASE_URL`
 - `GOOGLE_SHEET_TAB_NAME`
 - `SUPABASE_EVENT_LIMIT`
+- `SUPABASE_MIN_RAW_EVENT_ID` cutover event ID; older historical rows are already in the Sheet and may be protected
 
 The Google service account must have edit access to the target Google Sheet.
 

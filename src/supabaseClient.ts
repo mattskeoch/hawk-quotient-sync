@@ -8,11 +8,14 @@ export class SupabaseQuotientClient {
 		private readonly serviceRoleKey: string,
 	) {}
 
-	async listProcessedQuoteEvents(limit: number): Promise<SupabaseRawEvent[]> {
+	async listProcessedQuoteEvents(limit: number, minRawEventId: number | null): Promise<SupabaseRawEvent[]> {
 		const endpoint = new URL("/rest/v1/quotient_events_raw", this.url);
 		endpoint.searchParams.set("select", "id,event_type,payload");
 		endpoint.searchParams.set("status", "eq.processed");
 		endpoint.searchParams.set("event_type", `in.(${EVENT_TYPES.join(",")})`);
+		if (minRawEventId !== null) {
+			endpoint.searchParams.set("id", `gte.${minRawEventId}`);
+		}
 		endpoint.searchParams.set("order", "id.desc");
 		endpoint.searchParams.set("limit", String(limit));
 

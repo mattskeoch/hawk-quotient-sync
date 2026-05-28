@@ -8,11 +8,13 @@ export type AppEnv = {
 	GOOGLE_SHEET_TAB_NAME: string;
 	SYNC_SHARED_SECRET?: string;
 	SUPABASE_EVENT_LIMIT?: string;
+	SUPABASE_MIN_RAW_EVENT_ID?: string;
 };
 
 export function requireConfig(env: AppEnv): Required<Omit<AppEnv, "SYNC_SHARED_SECRET" | "SUPABASE_EVENT_LIMIT">> & {
 	SYNC_SHARED_SECRET?: string;
 	SUPABASE_EVENT_LIMIT?: string;
+	SUPABASE_MIN_RAW_EVENT_ID?: string;
 } {
 	const missing: string[] = [];
 	for (const key of [
@@ -35,4 +37,12 @@ export function eventLimit(env: AppEnv): number {
 	const parsed = Number(env.SUPABASE_EVENT_LIMIT ?? 100);
 	if (!Number.isInteger(parsed) || parsed < 1) return 100;
 	return Math.min(parsed, 1000);
+}
+
+export function minRawEventId(env: AppEnv): number | null {
+	const raw = env.SUPABASE_MIN_RAW_EVENT_ID;
+	if (!raw) return null;
+	const parsed = Number(raw);
+	if (!Number.isInteger(parsed) || parsed < 1) return null;
+	return parsed;
 }
