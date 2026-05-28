@@ -6,6 +6,8 @@ type SheetsValueResponse = {
 };
 
 export class GoogleSheetsClient {
+	private quoteRowIndex: Map<string, number> | null = null;
+
 	constructor(
 		private readonly sheetId: string,
 		private readonly tabName: string,
@@ -14,17 +16,26 @@ export class GoogleSheetsClient {
 	) {}
 
 	async findRowByQuoteNumber(quoteNumber: string): Promise<number | null> {
+		if (!this.quoteRowIndex) {
+			this.quoteRowIndex = await this.loadQuoteRowIndex();
+		}
+		return this.quoteRowIndex.get(quoteNumber) ?? null;
+	}
+
+	private async loadQuoteRowIndex(): Promise<Map<string, number>> {
 		const data = await this.request<SheetsValueResponse>(
 			`/values/${encodeURIComponent(this.range("A:A"))}?majorDimension=ROWS`,
 			{ method: "GET" },
 		);
+		const rowIndex = new Map<string, number>();
 		const rows = data.values ?? [];
-		for (const [index, row] of rows.entries()) {
-			if (String(row[0] ?? "").trim() === quoteNumber) {
-				return index + 1;
+		for (const [rowOffset, row] of rows.entries()) {
+			const quoteNumber = String(row[0] ?? "").trim();
+			if (quoteNumber) {
+				rowIndex.set(quoteNumber, rowOffset + 1);
 			}
 		}
-		return null;
+		return rowIndex;
 	}
 
 	async applyMutation(mutation: SheetMutation): Promise<void> {

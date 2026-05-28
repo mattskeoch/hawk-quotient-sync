@@ -65,4 +65,51 @@ describe("runSync", () => {
 			],
 		});
 	});
+
+	it("stops after the first apply failure", async () => {
+		const events: SupabaseRawEvent[] = [
+			{
+				id: 20,
+				event_type: "quote_sent",
+				payload: {
+					event_name: "quote_sent",
+					quote_number: 9793,
+					first_sent: "2026-05-28T06:49:29+00:00",
+					from: "Matt Skeoch",
+					quote_for: { name_first: "test", name_last: "quote" },
+					title: "Quotation - HAWK Concrete Floor Coatings",
+					quote_status: "Awaiting Acceptance",
+					total_excludes_tax: 0,
+				},
+			},
+			{
+				id: 21,
+				event_type: "quote_sent",
+				payload: {
+					event_name: "quote_sent",
+					quote_number: 9794,
+					first_sent: "2026-05-28T07:00:00+00:00",
+					quote_status: "Awaiting Acceptance",
+				},
+			},
+		];
+		const recorded: string[] = [];
+
+		const result = await runSync({
+			tabName: "⚡ Quotient Import",
+			events,
+			isProcessed: async () => false,
+			findRowByQuoteNumber: async () => null,
+			applyMutation: async () => {
+				throw new Error("Google Sheets request failed: 403");
+			},
+			recordProcessed: async (eventKey) => {
+				recorded.push(eventKey);
+			},
+			log: async () => undefined,
+		});
+
+		expect(result).toEqual({ fetched: 2, skipped: 0, applied: 0, ignored: 0, errors: 1 });
+		expect(recorded).toEqual([]);
+	});
 });

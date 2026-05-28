@@ -68,6 +68,7 @@ export async function runSync(deps: SyncDependencies): Promise<SyncResult> {
 				rawEventId: quote.rawEventId,
 				error: errorMessage,
 			});
+			break;
 		}
 	}
 
