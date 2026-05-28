@@ -5,7 +5,7 @@
 	"upload_source_maps": true,
 	"triggers": {
 		"crons": [
-			"*/15 * * * *"
+			"*/5 * * * *"
 		]
 	},
 	"vars": {
