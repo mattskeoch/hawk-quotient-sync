@@ -1,0 +1,16 @@
+{
+	"compatibility_date": "2025-10-08",
+	"main": "src/index.ts",
+	"name": "hawk-quotient-sync",
+	"upload_source_maps": true,
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_id": "47fdd780-1b97-49db-9b21-c1ace2ddbe9d",
+			"database_name": "hawk-quotient-sync"
+		}
+	],
+	"observability": {
+		"enabled": true
+	}
+}
